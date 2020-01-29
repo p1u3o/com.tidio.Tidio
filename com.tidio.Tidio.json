@@ -1,129 +1,65 @@
 {
-    "app-id":"com.tidio.Tidio",
-    "runtime":"org.gnome.Platform",
-    "runtime-version":"3.34",
-    "sdk":"org.gnome.Sdk",
-    "command":"tidio",
-    "separate-locales":false,
-    "finish-args":[
-        "--share=ipc",
-        "--socket=x11",
-        "--socket=fallback-x11",
-        "--socket=session-bus",
-        "--device=all",
-        "--allow=multiarch",
-        "--allow=devel",
-        "--socket=pulseaudio",
-        "--share=network",
-        "--system-talk-name=org.freedesktop.NetworkManager",
-        "--system-talk-name=org.freedesktop.login1",
-        "--filesystem=xdg-download",
-        "--filesystem=home",
-        "--talk-name=org.freedesktop.secrets",
-        "--talk-name=org.gtk.Notifications",
-        "--talk-name=org.freedesktop.Notifications",
-                "--talk-name=org.gnome.SettingsDaemon",
-        "--talk-name=org.gnome.GConf",
-        "--talk-name=org.kde.StatusNotifierWatcher"
-    ],
-    "add-extensions":{
-        "org.gnome.Platform.Compat.i386":{
-            "directory":"lib/i386-linux-gnu",
-            "version":"3.34"
-        },
-            "org.freedesktop.Platform.GL32": {
-          "directory": "lib/i386-linux-gnu/GL",
-          "version": "1.4",
-          "versions": "19.08;1.4",
-          "subdirectories": true,
-          "no-autodownload": true,
-          "autodelete": false,
-          "add-ld-path": "lib",
-          "merge-dirs": "vulkan/icd.d;glvnd/egl_vendor.d;OpenCL/vendors",
-          "download-if": "active-gl-driver",
-          "enable-if": "active-gl-driver"
-        }
-    },
-    "sdk-extensions": [
-      "org.gnome.Sdk.Compat.i386",
-      "org.freedesktop.Sdk.Extension.toolchain-i386"
-    ],
-                "build-options": {
-              "arch": {
-                "x86_64": {
-                  "prepend-pkg-config-path": "/app/lib32/pkgconfig:/usr/lib/i386-linux-gnu/pkgconfig",
-                  "ldflags": "-L/app/lib32",
-                  "append-path": "/usr/lib/sdk/toolchain-i386/bin",
-                  "env": {
-                    "CC": "i686-unknown-linux-gnu-gcc",
-                    "CXX": "i686-unknown-linux-gnu-g++"
-                  },
-                  "libdir": "/app/lib32"
-                }
-              }
-            },
-    "modules":[
-            "shared-modules/gtk2/gtk2.json",
-       {
-            "name": "libnotify",
-            "cleanup": [ "/bin" ],
-            "config-opts": [
-                "--disable-static",
-                "--disable-tests",
-                "--disable-introspection"
-            ],
-            "sources": [
-                {
-                    "type": "archive",
-                    "url": "https://download.gnome.org/sources/libnotify/0.7/libnotify-0.7.7.tar.xz",
-                    "sha256": "9cb4ce315b2655860c524d46b56010874214ec27e854086c1a1d0260137efc04"
-                }
-            ]
-
+  "app-id":"com.tidio.Tidio",
+  "runtime":"org.freedesktop.Platform",
+  "runtime-version":"19.08",
+  "sdk":"org.freedesktop.Sdk",
+  "base":"org.electronjs.Electron2.BaseApp",
+  "base-version":"19.08",
+  "command":"tidio",
+  "separate-locales":false,
+  "finish-args":[
+    "--share=ipc",
+    "--socket=x11",
+    "--device=dri",
+    "--socket=pulseaudio",
+    "--share=network",
+    "--filesystem=xdg-download",
+    "--filesystem=home:ro",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.kde.StatusNotifierWatcher",
+    "--env=XDG_CURRENT_DESKTOP=Unity"
+  ],
+  "modules":[
+    {
+      "name":"tidio",
+      "buildsystem":"simple",
+      "sources":[
+        {
+          "type":"script",
+          "dest-filename":"apply_extra",
+          "commands":[
+            "ar x tidio.deb",
+            "rm -f tidio.deb",
+            "tar xf data.tar.xz --strip 2 --no-same-owner",
+            "rm -f control.tar.xz data.tar.xz debian-binary",
+            "mkdir -p export/share/applications",
+            "sed -e 's/Icon=tidio/Icon=com.tidio.Tidio/' -e 's$Exec=tidio$Exec=/app/bin/tidio$' share/applications/tidio.desktop > export/share/applications/com.tidio.Tidio.desktop",
+            "echo StartupWMClass=tidio >> export/share/applications/com.tidio.Tidio.desktop",
+            "mkdir -p export/share/icons/hicolor/512x512/apps",
+            "cp share/pixmaps/tidio.png export/share/icons/hicolor/512x512/apps/com.tidio.Tidio.png"
+          ]
         },
         {
-            "name":"tidio",
-            "buildsystem":"simple",
-            "sources":[
-                {
-                    "type":"script",
-                    "dest-filename":"apply_extra",
-                    "commands":[
-                        "ar x tidio.deb",
-                        "rm -f tidio.deb",
-                        "tar xf data.tar.xz",
-                        "rm -f control.tar.xz data.tar.xz debian-binary",
-                        "mv usr/* .",
-                        "chmod -R a-s,go+rX,go-w .",
-                        "rmdir usr",
-                        "mkdir -p export/share/applications",
-                        "mkdir -p export/share/icons/hicolor/256x256/apps"
-                    ]
-                },
-                {
-                    "type":"script",
-                    "dest-filename":"tidio.sh",
-                    "commands":[
-                        "/app/extra/lib/tidio/Tidio"
-                    ]
-                },
-                {
-                    "type":"extra-data",
-                    "filename":"tidio.deb",
-                    "url":"https://s3-eu-west-1.amazonaws.com/tidio-desktop-app/v4/linux/tidio_4.0.0_ia32.deb",
-                    "sha256":"59cf6d80ff8941c4c6ba8c9d7eb8a280279b3f0de7e0f1c86876aa0a7815cda1",
-                    "size":46344468
-                }
-            ],
-            "build-commands":[
-                "mkdir /app/lib/i386-linux-gnu",
-                "mkdir -p /app/lib/debug/lib/i386-linux-gnu",
-                "install apply_extra /app/bin/apply_extra",
-                "install tidio.sh /app/bin/tidio",
-                "cp /usr/bin/ar /app/bin/ar",
-                 "ARCH_TRIPLE=$(gcc --print-multiarch) && cp /usr/lib/${ARCH_TRIPLE}/libbfd-*.so /app/lib"
-            ]
+          "type":"script",
+          "dest-filename":"tidio.sh",
+          "commands":[
+            "/app/extra/lib/tidio/Tidio"
+          ]
         },
-                "shared-modules/dbus-glib/dbus-glib-0.110.json"
-    ]
+        {
+          "type":"extra-data",
+          "filename":"tidio.deb",
+          "url":"https://s3-eu-west-1.amazonaws.com/tidio-desktop-app/v4/linux/tidio_4.0.0_amd64.deb",
+          "sha256":"7e9d4d6797f527ecf76800685a010e678d5b681a66496df926d89f11029f1594",
+          "size":45243620
+        }
+      ],
+      "build-commands":[
+        "install apply_extra /app/bin/apply_extra",
+        "install tidio.sh /app/bin/tidio",
+        "cp /usr/bin/ar /app/bin/ar",
+        "ARCH_TRIPLE=$(gcc --print-multiarch) && cp /usr/lib/${ARCH_TRIPLE}/libbfd-*.so /app/lib"
+      ]
+    }
+  ]
 }
